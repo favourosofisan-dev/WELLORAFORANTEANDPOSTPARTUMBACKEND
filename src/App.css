@@ -1,0 +1,12 @@
+/* Custom styles for Wellora Mama application components */
+
+.custom-glassmorphism {
+  background: rgba(245, 233, 226, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(122, 90, 79, 0.1);
+}
+
+.timeline-line-animated {
+  background: linear-gradient(to bottom, #EBDCD3 0%, #D8A0A6 50%, #C97A63 100%);
+}
