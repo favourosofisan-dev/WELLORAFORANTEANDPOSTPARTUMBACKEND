@@ -162,7 +162,7 @@ export const AIChatView: React.FC = () => {
     return (
       <div className="max-w-2xl mx-auto py-12 px-6 flex flex-col items-center justify-center text-center bg-white rounded-3xl border border-amber-200/50 shadow-sm animate-fade-in">
         <div className="w-20 h-20 rounded-2xl overflow-hidden mb-6 shadow-md border-2 border-amber-300">
-          <img src="/images/Ask wellora AI.jpeg" alt="Ask Wellora AI" className="w-full h-full object-cover" />
+          <img src="/images/Ask wellora AI.png" alt="Ask Wellora AI" className="w-full h-full object-cover" />
         </div>
         <h1 className="font-serif text-3xl font-bold text-wellora-mocha">Unlock Wellora AI</h1>
         <p className="text-sm text-wellora-mocha/60 mt-3 max-w-md leading-relaxed">
@@ -183,7 +183,7 @@ export const AIChatView: React.FC = () => {
     return (
       <div className="max-w-2xl mx-auto py-8 px-6 bg-white rounded-3xl border border-amber-200/50 shadow-sm animate-fade-in">
         <div className="flex items-center gap-2 mb-4 text-amber-600 border-b border-amber-100 pb-3">
-          <img src="/images/Ask wellora AI.jpeg" alt="Wellora AI" className="w-7 h-7 rounded-full object-cover border border-amber-300" />
+          <img src="/images/Ask wellora AI.png" alt="Wellora AI" className="w-7 h-7 rounded-full object-cover border border-amber-300" />
           <h2 className="font-serif text-xl font-bold text-wellora-mocha">Wellora AI Safeguard Agreement</h2>
         </div>
 
@@ -247,7 +247,7 @@ export const AIChatView: React.FC = () => {
       <header className="px-6 py-4 bg-amber-50/60 border-b border-amber-200/50 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-amber-300 shadow-sm">
-            <img src="/images/Ask wellora AI.jpeg" alt="Ask Wellora AI" className="w-full h-full object-cover" />
+            <img src="/images/Ask wellora AI.png" alt="Ask Wellora AI" className="w-full h-full object-cover" />
           </div>
           <div>
             <h2 className="font-serif text-sm font-bold text-wellora-mocha">Wellora AI Companion</h2>
@@ -302,7 +302,7 @@ export const AIChatView: React.FC = () => {
             <div className="flex gap-2 max-w-[85%] items-start">
               {msg.role === 'model' && (
                 <div className="w-6 h-6 rounded-full overflow-hidden border border-amber-300 flex-shrink-0 mt-0.5">
-                  <img src="/images/Ask wellora AI.jpeg" alt="Wellora AI" className="w-full h-full object-cover" />
+                  <img src="/images/Ask wellora AI.png" alt="Wellora AI" className="w-full h-full object-cover" />
                 </div>
               )}
               <div

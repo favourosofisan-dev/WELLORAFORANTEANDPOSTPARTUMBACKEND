@@ -21,7 +21,7 @@ import { AIChatView } from './views/AIChatView';
 
 const AiIcon = ({ className }: { className?: string }) => (
   <img
-    src="/images/Ask wellora AI.jpeg"
+    src="/images/Ask wellora AI.png"
     alt="AI"
     className={`${className} rounded-full object-cover border border-amber-300`}
   />
@@ -286,7 +286,7 @@ const MainAppContent: React.FC = () => {
               title="Chat with Wellora AI"
             >
               <img
-                src="/images/Ask wellora AI.jpeg"
+                src="/images/Ask wellora AI.png"
                 alt="Ask Wellora AI"
                 className="w-full h-full object-cover"
               />

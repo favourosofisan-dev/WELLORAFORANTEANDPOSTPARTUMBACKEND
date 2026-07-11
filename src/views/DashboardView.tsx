@@ -446,7 +446,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     : 'border-transparent text-amber-500/70 hover:text-amber-500'
                 }`}
               >
-                <img src="/images/Ask wellora AI.jpeg" alt="AI" className="w-3.5 h-3.5 rounded-full object-cover" />
+                <img src="/images/Ask wellora AI.png" alt="AI" className="w-3.5 h-3.5 rounded-full object-cover" />
                 AI Custom Plan {!profile.isPro ? <Lock className="w-3 h-3 text-amber-500" /> : <Crown className="w-3 h-3 text-amber-500" />}
               </button>
             </div>
