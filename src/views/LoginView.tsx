@@ -21,6 +21,15 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
   const [resetEmail, setResetEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState('');
+
+  // Rate limiting: max 3 attempts per 5 minutes
+  const getRateLimitData = () => {
+    try {
+      const raw = localStorage.getItem('wellora_reset_attempts');
+      return raw ? JSON.parse(raw) : { count: 0, firstAttemptTime: null };
+    } catch { return { count: 0, firstAttemptTime: null }; }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,15 +42,41 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     }, 1500);
   };
 
-  const handleForgotPasswordSubmit = (e: React.FormEvent) => {
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setResetError('');
     if (!resetEmail.trim() || !resetEmail.includes('@')) return;
+
+    // Client-side rate limiting
+    const rl = getRateLimitData();
+    const now = Date.now();
+    const FIVE_MIN = 5 * 60 * 1000;
+    if (rl.firstAttemptTime && (now - rl.firstAttemptTime) < FIVE_MIN) {
+      if (rl.count >= 3) {
+        const remaining = Math.ceil((FIVE_MIN - (now - rl.firstAttemptTime)) / 60000);
+        setResetError(`Too many requests. Please wait ${remaining} minute(s) and try again.`);
+        return;
+      }
+      localStorage.setItem('wellora_reset_attempts', JSON.stringify({ count: rl.count + 1, firstAttemptTime: rl.firstAttemptTime }));
+    } else {
+      localStorage.setItem('wellora_reset_attempts', JSON.stringify({ count: 1, firstAttemptTime: now }));
+    }
+
     setResetLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setResetLoading(false);
+    try {
+      await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetEmail.trim() }),
+      });
+      // Always show success to prevent email enumeration
       setResetSent(true);
-    }, 1500);
+    } catch (err) {
+      // Still show success to prevent enumeration
+      setResetSent(true);
+    } finally {
+      setResetLoading(false);
+    }
   };
 
   return (
@@ -82,6 +117,9 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
                       required
                     />
                   </div>
+                  {resetError && (
+                    <p className="text-xs text-red-600 font-semibold bg-red-50 border border-red-200 px-3 py-2 rounded-xl">{resetError}</p>
+                  )}
                   <button
                     type="submit"
                     disabled={resetLoading}
@@ -123,9 +161,11 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
             {/* Logo */}
             <div className="flex justify-center mb-6">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-wellora-terracotta flex items-center justify-center text-white font-serif font-bold text-base shadow-sm">
-                  W
-                </div>
+                <img
+                  src="/images/wellora-mama-logo.png"
+                  alt="Wellora Mama"
+                  className="w-9 h-9 rounded-full object-cover shadow-sm"
+                />
                 <span className="font-serif text-lg font-bold tracking-wide text-wellora-mocha">
                   wellora <span className="text-wellora-terracotta italic font-normal">mama</span>
                 </span>

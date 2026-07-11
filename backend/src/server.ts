@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import * as dotenv from 'dotenv';
 import { GeminiService } from './services/ai/gemini.service';
-import { rateLimiter } from './middleware/rate-limiter';
+import { rateLimiter, RATE_LIMIT_PRESETS } from './middleware/rate-limiter';
 
 // Load environment variables
 dotenv.config();
@@ -156,6 +156,74 @@ app.post('/api/ai/daily-plan', injectRateLimitUser, aiRateLimiter, async (req: R
       message: err.message || 'Failed to generate wellness plan.' 
     });
   }
+});
+
+// Simple in-memory subscription store for demonstration/scaffolding
+interface PushSubscription {
+  endpoint: string;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+}
+const subscriptionsStore = new Map<string, { subscription: PushSubscription; type: 'antenatal' | 'vaccines' }[]>();
+
+/**
+ * Forgot Password Endpoint
+ * POST /api/auth/forgot-password
+ */
+app.post('/api/auth/forgot-password', RATE_LIMIT_PRESETS.passwordReset, async (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required.' });
+  }
+  
+  console.log(`Password reset link requested for email: ${email}`);
+  
+  return res.json({ 
+    success: true, 
+    message: 'If the email exists, a password reset link has been dispatched.' 
+  });
+});
+
+/**
+ * Subscribe to Antenatal Push Notifications
+ * POST /api/push/subscribe
+ */
+app.post('/api/push/subscribe', async (req: Request, res: Response) => {
+  const { subscription, userId } = req.body;
+  
+  if (!subscription || !userId) {
+    return res.status(400).json({ error: 'Subscription and userId are required.' });
+  }
+
+  console.log(`Registered antenatal push subscription for ${userId}:`, subscription.endpoint);
+  
+  const userSubs = subscriptionsStore.get(userId) || [];
+  userSubs.push({ subscription, type: 'antenatal' });
+  subscriptionsStore.set(userId, userSubs);
+  
+  return res.json({ success: true, message: 'Antenatal push subscription registered successfully.' });
+});
+
+/**
+ * Subscribe to Vaccine Push Notifications
+ * POST /api/push/subscribe-vaccines
+ */
+app.post('/api/push/subscribe-vaccines', async (req: Request, res: Response) => {
+  const { subscription, userId } = req.body;
+  
+  if (!subscription || !userId) {
+    return res.status(400).json({ error: 'Subscription and userId are required.' });
+  }
+
+  console.log(`Registered vaccine push subscription for ${userId}:`, subscription.endpoint);
+  
+  const userSubs = subscriptionsStore.get(userId) || [];
+  userSubs.push({ subscription, type: 'vaccines' });
+  subscriptionsStore.set(userId, userSubs);
+  
+  return res.json({ success: true, message: 'Vaccine push subscription registered successfully.' });
 });
 
 // Start listening

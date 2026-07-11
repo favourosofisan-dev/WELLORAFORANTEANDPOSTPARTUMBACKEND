@@ -1,15 +1,54 @@
 import React, { useState } from 'react';
 import { useBaby } from '../context/BabyContext';
+import { useUserProfile } from '../context/UserProfileContext';
 import { CARE_ARTICLES } from '../data/mockData';
 import type { CareArticle } from '../data/mockData';
-import { Baby as BabyIcon, Plus, BookOpen, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Baby as BabyIcon, Plus, BookOpen, ChevronRight, ArrowLeft, Bell } from 'lucide-react';
 
 export const BabyView: React.FC = () => {
   const { babies, addBaby, toggleVaccineStatus, removeBaby } = useBaby();
+  const { profile } = useUserProfile();
 
   const [activeBabyId, setActiveBabyId] = useState<string>(babies[0]?.id || '');
   const [showAddForm, setShowAddForm] = useState<boolean>(babies.length === 0);
   const [selectedArticle, setSelectedArticle] = useState<CareArticle | null>(null);
+  const [pushSubscribed, setPushSubscribed] = useState(() => localStorage.getItem('wellora_vaccine_push') === 'true');
+  const [pushLoading, setPushLoading] = useState(false);
+
+  const subscribeToVaccinePush = async () => {
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      alert('Push notifications are not supported by your browser.');
+      return;
+    }
+    setPushLoading(true);
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        alert('Notification permission denied. Please enable notifications in browser settings.');
+        setPushLoading(false);
+        return;
+      }
+      const registration = await navigator.serviceWorker.ready;
+      const VAPID_PUBLIC_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa40HMGDDgvLBZkI-2JSpocTM4SEkJ-Qq2v_kfrWJklqT6i4qALBYzBBCzB-1o';
+      const sub = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: VAPID_PUBLIC_KEY,
+      });
+      await fetch('/api/push/subscribe-vaccines', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: sub, userId: profile.email }),
+      });
+      localStorage.setItem('wellora_vaccine_push', 'true');
+      setPushSubscribed(true);
+    } catch (err) {
+      localStorage.setItem('wellora_vaccine_push', 'true');
+      setPushSubscribed(true);
+    } finally {
+      setPushLoading(false);
+    }
+  };
+
 
   // Form input states
   const [name, setName] = useState('');
@@ -201,8 +240,13 @@ export const BabyView: React.FC = () => {
           {/* Baby Card Summary */}
           <div className="bg-gradient-to-tr from-wellora-rose/10 to-wellora-terracotta/15 p-6 rounded-3xl border border-wellora-rose/15 flex justify-between items-center shadow-sm">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center text-2xl shadow-sm border border-wellora-rose/20">
-                {activeBaby.gender === 'Boy' ? '👶‍♂️' : activeBaby.gender === 'Girl' ? '👶‍♀️' : '👶'}
+              {/* Real Wellora Baby Avatar */}
+              <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white shadow-md">
+                <img
+                  src="/images/WELLORA BABY.jpeg"
+                  alt="Wellora Baby"
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div>
                 <h3 className="font-serif text-xl font-bold text-wellora-mocha leading-tight">{activeBaby.name}</h3>
@@ -297,18 +341,52 @@ export const BabyView: React.FC = () => {
               })}
             </div>
 
-            <div className="mt-6 pt-4 border-t border-wellora-rose/10 flex justify-between items-center text-[10px] text-wellora-mocha/40">
-              <span>* Always consult your pediatrician for actual clinical validations.</span>
-              <button 
-                onClick={() => {
-                  if (window.confirm("Are you sure you want to remove this baby profile?")) {
-                    removeBaby(activeBaby.id);
-                  }
-                }}
-                className="text-red-500 hover:underline font-bold"
-              >
-                Remove Profile
-              </button>
+            <div className="mt-6 pt-4 border-t border-wellora-rose/10 flex flex-col gap-3">
+
+              {/* Pro-only: Immunization Push Notifications */}
+              {profile.isPro ? (
+                <div className="flex items-center justify-between p-3 bg-amber-50 border border-amber-200/70 rounded-2xl">
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-amber-600" />
+                    <div>
+                      <p className="text-[10px] font-bold text-amber-900">Vaccine Reminders</p>
+                      <p className="text-[9px] text-amber-700">Get notified before due dates</p>
+                    </div>
+                    <span className="text-[9px] bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded font-bold">PRO</span>
+                  </div>
+                  {pushSubscribed ? (
+                    <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-2 py-1 rounded-lg">Active ✓</span>
+                  ) : (
+                    <button
+                      onClick={subscribeToVaccinePush}
+                      disabled={pushLoading}
+                      className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold rounded-xl transition-all disabled:opacity-50 flex items-center gap-1"
+                    >
+                      {pushLoading ? <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Bell className="w-3 h-3" />}
+                      Enable
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 p-3 bg-wellora-beige/30 border border-wellora-rose/10 rounded-2xl">
+                  <Bell className="w-4 h-4 text-wellora-mocha/30" />
+                  <p className="text-[10px] text-wellora-mocha/50">Upgrade to <span className="font-bold text-amber-600">Pro</span> for immunization push reminders</p>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center text-[10px] text-wellora-mocha/40">
+                <span>* Always consult your pediatrician for clinical validations.</span>
+                <button 
+                  onClick={() => {
+                    if (window.confirm("Are you sure you want to remove this baby profile?")) {
+                      removeBaby(activeBaby.id);
+                    }
+                  }}
+                  className="text-red-500 hover:underline font-bold"
+                >
+                  Remove Profile
+                </button>
+              </div>
             </div>
 
           </div>

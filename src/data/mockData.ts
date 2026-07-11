@@ -1872,8 +1872,34 @@ export const CARE_ARTICLES: CareArticle[] = [
       'Monitor breathing rate: rapid breathing or retractions (skin pulling in under ribs) requires immediate care.',
       'Never give cold medicines to infants without pediatric authorization.'
     ]
+  },
+  {
+    id: 'exclusive-breastfeeding',
+    title: 'Exclusive Breastfeeding: Benefits, Technique & Support',
+    category: 'Nutrition',
+    summary: 'WHO-recommended guidance on exclusive breastfeeding for the first 6 months — benefits, latch, frequency, and overcoming common challenges.',
+    content: [
+      'The World Health Organization (WHO) and UNICEF recommend exclusive breastfeeding for the first 6 months of life. "Exclusive" means the baby receives only breast milk — no water, formula, or other foods unless medically indicated.',
+      'Breast milk is uniquely tailored to your baby\'s needs. It contains the perfect balance of fats, proteins, and carbohydrates, as well as antibodies (especially IgA) that protect your baby from infections including ear infections, respiratory illnesses, and gastrointestinal diseases.',
+      'A proper latch is the foundation of successful breastfeeding. Your baby\'s mouth should cover the entire nipple and a large portion of the areola (the darker skin surrounding the nipple), not just the nipple tip. A shallow latch causes nipple pain and reduces milk transfer.',
+      'Newborns typically feed 8–12 times every 24 hours, roughly every 2–3 hours. You do not need to watch the clock — feed on demand whenever your baby shows hunger cues (rooting, sucking on hands, turning head side to side). Crying is a late hunger cue.',
+      'Signs your baby is getting enough milk: 6 or more wet nappies per day after day 4, regular soft yellow stools, steady weight gain (babies may lose up to 7–10% of birth weight in the first week but should regain it by day 10–14), and a satisfied, calm baby after feeds.',
+      'Common challenges include sore nipples (often caused by poor latch — correct positioning is the solution), engorgement (frequent feeding or gentle expression helps), and low perceived milk supply (most mothers produce enough; frequent feeding stimulates production). Seek support from a lactation consultant (IBCLC) for persistent issues.',
+      'Breast milk production works on a supply-and-demand basis. The more your baby feeds (or you express), the more milk you produce. Supplementing with formula without pumping can reduce your milk supply over time.',
+      'If you must return to work or be separated from your baby, expressing (pumping) breast milk allows continued exclusive breastfeeding. Expressed breast milk can be stored safely at room temperature for 4 hours, in the refrigerator for up to 4 days, and in the freezer for 6 months.'
+    ],
+    tips: [
+      'Skin-to-skin contact in the first hour after birth (the "golden hour") significantly improves breastfeeding initiation and milk supply.',
+      'Ensure a deep latch: baby\'s chin touches the breast, lips are flanged outward like a fish, and you hear rhythmic swallowing — not clicking sounds.',
+      'Alternate which breast you start feeds on to ensure both sides are equally stimulated.',
+      'Stay hydrated — drink to thirst, aiming for at least 8 glasses of water daily to support milk production.',
+      'Avoid nipple shields, bottles, and pacifiers in the first 4–6 weeks unless medically advised, as they can cause nipple preference and interfere with latch.',
+      'Reach out to a certified lactation consultant (IBCLC) if breastfeeding is painful — pain is not normal and indicates a latch issue that can be corrected.',
+      'Continue breastfeeding during illness — your breast milk will contain antibodies specific to the illness and help protect your baby.'
+    ]
   }
 ];
+
 
 export const LABOR_PREP_GUIDES: LaborPrepGuide[] = [
   {

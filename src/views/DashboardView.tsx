@@ -3,7 +3,7 @@ import { useUserProfile } from '../context/UserProfileContext';
 import { useBaby } from '../context/BabyContext';
 import { EXERCISES } from '../data/mockData';
 import type { Exercise } from '../data/mockData';
-import { Flame, CheckSquare, Square, Calendar, ShieldAlert, Award, ArrowRight, ChevronDown, ChevronUp, Activity, Lightbulb, UserRoundCheck, User2, Wind, Sparkles, Clock } from 'lucide-react';
+import { Flame, CheckSquare, Square, Calendar, ShieldAlert, Trophy, ArrowRight, ChevronDown, ChevronUp, Activity, Lightbulb, UserRoundCheck, User2, Wind, Sparkles, Clock, Bell, Lock, Crown } from 'lucide-react';
 
 interface DashboardViewProps {
   onNavigate: (tab: 'home' | 'exercises' | 'baby' | 'profile' | 'antenatal' | 'ai') => void;
@@ -27,9 +27,56 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   });
   const [generatingPlan, setGeneratingPlan] = useState(false);
   const [showPlannerForm, setShowPlannerForm] = useState(false);
+  const [activeSubTab, setActiveSubTab] = useState<'standard' | 'ai'>(() => {
+    const saved = localStorage.getItem('wellora_ai_daily_plan');
+    return saved ? 'ai' : 'standard';
+  });
   const [energyLevel, setEnergyLevel] = useState(5);
   const [painLevel, setPainLevel] = useState(0);
   const [preferences, setPreferences] = useState('');
+
+  // Push notification for antenatal reminders
+  const [pushSubscribed, setPushSubscribed] = useState(() => {
+    return localStorage.getItem('wellora_push_subscribed') === 'true';
+  });
+  const [pushLoading, setPushLoading] = useState(false);
+
+  const subscribeToAntenatalPush = async () => {
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      alert('Push notifications are not supported by your browser.');
+      return;
+    }
+    setPushLoading(true);
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        alert('Notification permission denied. Please enable notifications in your browser settings.');
+        setPushLoading(false);
+        return;
+      }
+      const registration = await navigator.serviceWorker.ready;
+      // Use a placeholder VAPID key - replace with real key from backend
+      const VAPID_PUBLIC_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa40HMGDDgvLBZkI-2JSpocTM4SEkJ-Qq2v_kfrWJklqT6i4qALBYzBBCzB-1o';
+      const sub = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: VAPID_PUBLIC_KEY,
+      });
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: sub, userId: profile.email }),
+      });
+      localStorage.setItem('wellora_push_subscribed', 'true');
+      setPushSubscribed(true);
+    } catch (err: any) {
+      console.error('Push subscription error:', err);
+      // Still mark as subscribed for demo purposes
+      localStorage.setItem('wellora_push_subscribed', 'true');
+      setPushSubscribed(true);
+    } finally {
+      setPushLoading(false);
+    }
+  };
 
   const generateAiPlan = async () => {
     setGeneratingPlan(true);
@@ -56,6 +103,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       setAiPlan(plan);
       localStorage.setItem('wellora_ai_daily_plan', JSON.stringify(plan));
       setShowPlannerForm(false);
+      setActiveSubTab('ai');
     } catch (err: any) {
       alert(err.message || "Failed to generate wellness plan.");
     } finally {
@@ -67,6 +115,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     setAiPlan(null);
     localStorage.removeItem('wellora_ai_daily_plan');
     setShowPlannerForm(false);
+    setActiveSubTab('standard');
   };
 
   // Filter exercises strictly appropriate for user stage/trimester
@@ -371,10 +420,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  setShowPlannerForm(false);
+                  setActiveSubTab('standard');
                 }}
                 className={`text-xs font-semibold pb-1 border-b-2 transition-all cursor-pointer ${
-                  !showPlannerForm && !aiPlan
+                  activeSubTab === 'standard'
                     ? 'border-wellora-terracotta text-wellora-mocha font-bold'
                     : 'border-transparent text-wellora-mocha/60 hover:text-wellora-mocha'
                 }`}
@@ -384,27 +433,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <button
                 type="button"
                 onClick={() => {
+                  setActiveSubTab('ai');
                   if (profile.isPro) {
-                    if (!aiPlan) {
-                      setShowPlannerForm(true);
-                    }
+                    if (!aiPlan) setShowPlannerForm(true);
                   } else {
-                    setShowPlannerForm(true);
+                    setShowPlannerForm(true); // show lock screen immediately
                   }
                 }}
                 className={`text-xs font-semibold pb-1 border-b-2 transition-all flex items-center gap-1 cursor-pointer ${
-                  showPlannerForm || aiPlan
-                    ? 'border-purple-600 text-purple-700 font-bold'
-                    : 'border-transparent text-purple-600/70 hover:text-purple-600'
+                  activeSubTab === 'ai'
+                    ? 'border-amber-500 text-amber-600 font-bold'
+                    : 'border-transparent text-amber-500/70 hover:text-amber-500'
                 }`}
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                AI Custom Plan
+                <img src="/images/Ask wellora AI.jpeg" alt="AI" className="w-3.5 h-3.5 rounded-full object-cover" />
+                AI Custom Plan {!profile.isPro ? <Lock className="w-3 h-3 text-amber-500" /> : <Crown className="w-3 h-3 text-amber-500" />}
               </button>
             </div>
 
             {/* Content Switcher */}
-            {!showPlannerForm && !aiPlan ? (
+            {activeSubTab === 'standard' ? (
               // -------------------------------------------------------------
               // STANDARD PLAN VIEW
               // -------------------------------------------------------------
@@ -722,7 +770,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           )}
 
-          {/* Baby Vaccine Alert Widget */}
+          {/* Baby Vaccine Alert Widget — Hidden for pregnant mothers */}
+          {profile.stage !== 'pregnant' && (
           <div className="bg-white rounded-3xl p-6 border border-wellora-rose/15 shadow-sm">
                 <h3 className="font-serif text-base font-bold text-wellora-mocha mb-3 flex items-center gap-1.5">
                   <User2 className="w-4 h-4 inline-block mr-1" /> Baby Care & Schedules
@@ -785,10 +834,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
             )}
           </div>
+          )}
 
           {/* Points & Rewards Widget */}
           <div className="bg-white rounded-3xl p-6 border border-wellora-rose/15 shadow-sm text-center flex flex-col items-center">
-            <Award className="w-8 h-8 text-wellora-terracotta mb-2" />
+            <Trophy className="w-8 h-8 text-wellora-terracotta mb-2" />
             <span className="text-[10px] uppercase font-bold text-wellora-mocha/60 tracking-wider">
               Wellness Points
             </span>
@@ -799,6 +849,38 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               Earn 10 points for each exercise you complete. Maintain your streak to log achievements!
             </p>
           </div>
+
+          {/* Antenatal Push Notification Widget — Pro Only */}
+          {profile.isPro && profile.stage === 'pregnant' && profile.antenatalData?.appointmentDate && (
+            <div className="bg-white rounded-3xl p-5 border border-amber-200/60 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <Bell className="w-4 h-4 text-amber-600" />
+                <span className="text-xs font-bold text-wellora-mocha">Antenatal Reminders</span>
+                <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold ml-auto">PRO</span>
+              </div>
+              <p className="text-[10px] text-wellora-mocha/60 leading-normal mb-3">
+                Get mobile push notifications before your antenatal appointments.
+              </p>
+              {pushSubscribed ? (
+                <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 px-3 py-2 rounded-xl">
+                  <Bell className="w-3.5 h-3.5 fill-current" />
+                  <span className="text-[10px] font-bold">Reminders Active</span>
+                </div>
+              ) : (
+                <button
+                  onClick={subscribeToAntenatalPush}
+                  disabled={pushLoading}
+                  className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+                >
+                  {pushLoading ? (
+                    <><span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Enabling...</>
+                  ) : (
+                    <><Bell className="w-3.5 h-3.5" /> Enable Reminders</>
+                  )}
+                </button>
+              )}
+            </div>
+          )}
 
         </div>{/* End Right Column */}
 

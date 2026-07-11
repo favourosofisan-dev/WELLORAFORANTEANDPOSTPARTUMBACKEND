@@ -12,11 +12,20 @@ import { LabourNavigationView } from './views/LabourNavigationView';
 import { ProfileView } from './views/ProfileView';
 import { LegalView } from './views/LegalView';
 import { BreathingTool } from './components/BreathingTool';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import type { Exercise } from './data/mockData';
-import { Home, Dumbbell, Baby as BabyIcon, User, Calendar, X, ShieldAlert, Wind, Sparkles } from 'lucide-react';
+import { Home, Dumbbell, Baby as BabyIcon, User, Calendar, X, ShieldAlert, Wind } from 'lucide-react';
 import './App.css';
 import { LoginView } from './views/LoginView';
 import { AIChatView } from './views/AIChatView';
+
+const AiIcon = ({ className }: { className?: string }) => (
+  <img
+    src="/images/Ask wellora AI.jpeg"
+    alt="AI"
+    className={`${className} rounded-full object-cover border border-amber-300`}
+  />
+);
 
 const MainAppContent: React.FC = () => {
   const { profile, logout } = useUserProfile();
@@ -162,9 +171,11 @@ const MainAppContent: React.FC = () => {
           {/* Sidebar Navigation for Desktop */}
           <aside className="hidden md:flex flex-col w-64 bg-white border-r border-wellora-rose/15 p-6 sticky top-0 h-screen select-none">
             <div className="flex items-center gap-2 mb-8">
-              <div className="w-8 h-8 rounded-full bg-wellora-terracotta flex items-center justify-center text-white font-serif font-bold text-base shadow-sm">
-                W
-              </div>
+              <img
+                src="/images/wellora-mama-logo.png"
+                alt="Wellora Mama"
+                className="w-9 h-9 rounded-full object-cover shadow-sm"
+              />
               <span className="font-serif text-lg font-bold tracking-wide text-wellora-mocha">
                 wellora <span className="text-wellora-terracotta italic font-normal">mama</span>
               </span>
@@ -178,7 +189,7 @@ const MainAppContent: React.FC = () => {
                 profile.stage === 'labour'
                   ? { id: 'antenatal', label: 'Labour Navigation', icon: Wind }
                   : { id: 'antenatal', label: 'Antenatal', icon: Calendar },
-                { id: 'ai', label: 'Wellora AI', icon: Sparkles },
+                { id: 'ai', label: 'Wellora AI', icon: AiIcon },
                 { id: 'profile', label: 'My Profile', icon: User }
               ].map((tab) => {
                 const IconComponent = tab.icon;
@@ -217,9 +228,11 @@ const MainAppContent: React.FC = () => {
             {/* Top Responsive Navbar for Mobile */}
             <header className="md:hidden sticky top-0 z-40 bg-wellora-beige/85 backdrop-blur-md border-b border-wellora-rose/15 px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <div className="w-6 h-6 rounded-full bg-wellora-terracotta flex items-center justify-center text-white font-serif font-bold text-xs">
-                  W
-                </div>
+                <img
+                  src="/images/wellora-mama-logo.png"
+                  alt="Wellora Mama"
+                  className="w-7 h-7 rounded-full object-cover shadow-sm"
+                />
                 <span className="font-serif text-sm font-bold tracking-wide text-wellora-mocha">
                   wellora <span className="text-wellora-terracotta italic font-normal text-xs">mama</span>
                 </span>
@@ -242,7 +255,7 @@ const MainAppContent: React.FC = () => {
             {[
               { id: 'home', label: 'Home', icon: Home },
               { id: 'exercises', label: 'Exercises', icon: Dumbbell },
-              { id: 'ai', label: 'Wellora AI', icon: Sparkles },
+              { id: 'ai', label: 'Wellora AI', icon: AiIcon },
               { id: 'baby', label: 'Baby', icon: BabyIcon },
               { id: 'profile', label: 'Profile', icon: User }
             ].map((tab) => {
@@ -264,15 +277,19 @@ const MainAppContent: React.FC = () => {
             })}
           </nav>
 
-          {/* Floating AI Button */}
+          {/* Floating AI Button — Ask Wellora AI */}
           {activeTab !== 'ai' && (
             <button
               onClick={() => triggerTabTransition('ai')}
-              className="fixed bottom-20 right-6 md:bottom-6 md:right-6 z-40 w-12 h-12 rounded-full bg-gradient-to-tr from-purple-600 to-wellora-terracotta text-white flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer border border-white/20"
+              className="fixed bottom-20 right-6 md:bottom-6 md:right-6 z-40 w-14 h-14 rounded-full overflow-hidden shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer border-2 border-amber-400"
               style={{ minHeight: '44px', minWidth: '44px' }}
               title="Chat with Wellora AI"
             >
-              <Sparkles className="w-5 h-5 fill-current" />
+              <img
+                src="/images/Ask wellora AI.jpeg"
+                alt="Ask Wellora AI"
+                className="w-full h-full object-cover"
+              />
             </button>
           )}
         </div>
@@ -345,6 +362,7 @@ export const App: React.FC = () => {
       <SplashScreen />
       <UserProfileProvider>
         <BabyProvider>
+          <PWAInstallPrompt />
           <MainAppContent />
         </BabyProvider>
       </UserProfileProvider>

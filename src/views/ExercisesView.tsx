@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useUserProfile } from '../context/UserProfileContext';
 import { EXERCISES } from '../data/mockData';
 import type { Exercise } from '../data/mockData';
-import { Search, Star, CheckCircle2, ShieldAlert, X, Play, Clock, Award, Bookmark, BookmarkCheck } from 'lucide-react';
+import { Search, Star, CheckCircle2, ShieldAlert, X, Play, Clock, Trophy, Bookmark, BookmarkCheck } from 'lucide-react';
 
 interface ExercisesViewProps {
   selectedExercise: Exercise | null;
@@ -83,6 +83,42 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
       setShowCompletionToast(null);
     }, 4000);
   };
+
+  // Stage gate: if user has no stage configured, show prompt
+  if (!profile.stage) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8 bg-white rounded-3xl border border-wellora-rose/15 shadow-sm animate-fade-in">
+        <div className="w-16 h-16 bg-wellora-rose/15 rounded-2xl flex items-center justify-center mb-5">
+          <span className="text-3xl">🏋️‍♀️</span>
+        </div>
+        <h2 className="font-serif text-2xl font-bold text-wellora-mocha mb-2">Set Your Stage First</h2>
+        <p className="text-sm text-wellora-mocha/60 max-w-xs leading-relaxed mb-6">
+          To generate exercises safe for you, Wellora needs to know your pregnancy or postpartum stage. Please complete your profile setup.
+        </p>
+        <div className="text-[11px] text-wellora-mocha/40 mt-2">
+          Go to <span className="font-bold text-wellora-terracotta">My Profile</span> → Edit Stage to continue.
+        </div>
+      </div>
+    );
+  }
+
+  // Stage gate: pregnant user must have trimester set
+  if (profile.stage === 'pregnant' && !profile.trimester) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8 bg-white rounded-3xl border border-wellora-rose/15 shadow-sm animate-fade-in">
+        <div className="w-16 h-16 bg-wellora-rose/15 rounded-2xl flex items-center justify-center mb-5">
+          <span className="text-3xl">🤰</span>
+        </div>
+        <h2 className="font-serif text-2xl font-bold text-wellora-mocha mb-2">Which Trimester Are You In?</h2>
+        <p className="text-sm text-wellora-mocha/60 max-w-xs leading-relaxed mb-6">
+          Wellora needs your current trimester to recommend safe pregnancy exercises. Please update your profile with your trimester before accessing exercises.
+        </p>
+        <div className="text-[11px] text-wellora-mocha/40 mt-2">
+          Go to <span className="font-bold text-wellora-terracotta">My Profile</span> → Edit Stage to continue.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative animate-fade-in pb-12">
@@ -288,16 +324,25 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
                   <span className="px-2.5 py-0.5 bg-wellora-rose/15 text-wellora-terracotta rounded-full text-[10px] font-bold">
                     {selectedExercise.duration}
                   </span>
-                  {selectedExercise.targetTrimesters.map((t) => (
-                    <span key={t} className="px-2.5 py-0.5 bg-wellora-beige border border-wellora-rose/30 text-wellora-mocha rounded-full text-[10px] font-bold">
-                      {t} Trimester
+                  {/* Only show the user's current stage badge, not all trimesters */}
+                  {profile.stage === 'pregnant' && profile.trimester && (
+                    <span className="px-2.5 py-0.5 bg-wellora-beige border border-wellora-rose/30 text-wellora-mocha rounded-full text-[10px] font-bold">
+                      {profile.trimester} Trimester
                     </span>
-                  ))}
-                  {selectedExercise.isPostpartumSafe && (
+                  )}
+                  {profile.stage === 'postpartum' && (
                     <span className="px-2.5 py-0.5 bg-green-50 border border-green-200 text-green-700 rounded-full text-[10px] font-bold">
                       Postpartum Recovery
                     </span>
                   )}
+                  {profile.stage === 'labour' && (
+                    <span className="px-2.5 py-0.5 bg-purple-50 border border-purple-200 text-purple-700 rounded-full text-[10px] font-bold">
+                      Labour Stage
+                    </span>
+                  )}
+                  <span className="px-2.5 py-0.5 bg-wellora-beige border border-wellora-rose/20 text-wellora-mocha/70 rounded-full text-[10px] font-bold">
+                    {selectedExercise.category}
+                  </span>
                 </div>
               </div>
 
@@ -407,7 +452,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
                 onClick={() => handleMarkCompleted(selectedExercise)}
                 className="flex-1 py-3 bg-wellora-terracotta text-white hover:bg-wellora-terracotta/95 font-semibold rounded-full shadow-md text-sm flex items-center justify-center gap-1.5 transition-all"
               >
-                <Award className="w-4 h-4" /> Mark as Completed
+                <Trophy className="w-4 h-4" /> Mark as Completed
               </button>
               
               <button

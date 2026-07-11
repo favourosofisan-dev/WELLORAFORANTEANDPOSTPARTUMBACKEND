@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useUserProfile } from '../context/UserProfileContext';
-import { MessageSquare, Sparkles, Send, Trash2, ShieldAlert, Heart, AlertCircle } from 'lucide-react';
+import { MessageSquare, Send, Trash2, Heart, AlertCircle } from 'lucide-react';
 
 export const AIChatView: React.FC = () => {
   const { profile, upgradeToPro, acknowledgeAiDisclaimer } = useUserProfile();
@@ -160,9 +160,9 @@ export const AIChatView: React.FC = () => {
   // 1. Upgrade Flow (If user is Free)
   if (!profile.isPro) {
     return (
-      <div className="max-w-2xl mx-auto py-12 px-6 flex flex-col items-center justify-center text-center bg-white rounded-3xl border border-wellora-rose/15 shadow-sm animate-fade-in">
-        <div className="w-16 h-16 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
-          <Sparkles className="w-8 h-8" />
+      <div className="max-w-2xl mx-auto py-12 px-6 flex flex-col items-center justify-center text-center bg-white rounded-3xl border border-amber-200/50 shadow-sm animate-fade-in">
+        <div className="w-20 h-20 rounded-2xl overflow-hidden mb-6 shadow-md border-2 border-amber-300">
+          <img src="/images/Ask wellora AI.jpeg" alt="Ask Wellora AI" className="w-full h-full object-cover" />
         </div>
         <h1 className="font-serif text-3xl font-bold text-wellora-mocha">Unlock Wellora AI</h1>
         <p className="text-sm text-wellora-mocha/60 mt-3 max-w-md leading-relaxed">
@@ -170,7 +170,7 @@ export const AIChatView: React.FC = () => {
         </p>
         <button
           onClick={upgradeToPro}
-          className="mt-8 px-8 py-3.5 bg-gradient-to-r from-purple-600 to-wellora-terracotta text-white font-bold rounded-full hover:shadow-md transition-all text-xs"
+          className="mt-8 px-8 py-3.5 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-bold rounded-full hover:shadow-md transition-all text-xs"
         >
           Upgrade to Wellora Pro
         </button>
@@ -181,9 +181,9 @@ export const AIChatView: React.FC = () => {
   // 2. Disclaimer Check (Before first chat)
   if (!profile.acknowledgedAiDisclaimer) {
     return (
-      <div className="max-w-2xl mx-auto py-8 px-6 bg-white rounded-3xl border border-wellora-rose/15 shadow-sm animate-fade-in">
-        <div className="flex items-center gap-2 mb-4 text-wellora-terracotta border-b border-wellora-rose/10 pb-3">
-          <ShieldAlert className="w-6 h-6" />
+      <div className="max-w-2xl mx-auto py-8 px-6 bg-white rounded-3xl border border-amber-200/50 shadow-sm animate-fade-in">
+        <div className="flex items-center gap-2 mb-4 text-amber-600 border-b border-amber-100 pb-3">
+          <img src="/images/Ask wellora AI.jpeg" alt="Wellora AI" className="w-7 h-7 rounded-full object-cover border border-amber-300" />
           <h2 className="font-serif text-xl font-bold text-wellora-mocha">Wellora AI Safeguard Agreement</h2>
         </div>
 
@@ -244,14 +244,14 @@ export const AIChatView: React.FC = () => {
     <div className="max-w-2xl mx-auto flex flex-col h-[78vh] bg-white rounded-3xl border border-wellora-rose/15 shadow-sm overflow-hidden animate-fade-in">
 
       {/* Header */}
-      <header className="px-6 py-4 bg-wellora-beige/30 border-b border-wellora-rose/15 flex items-center justify-between flex-shrink-0">
+      <header className="px-6 py-4 bg-amber-50/60 border-b border-amber-200/50 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold">
-            <Sparkles className="w-4 h-4" />
+          <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-amber-300 shadow-sm">
+            <img src="/images/Ask wellora AI.jpeg" alt="Ask Wellora AI" className="w-full h-full object-cover" />
           </div>
           <div>
             <h2 className="font-serif text-sm font-bold text-wellora-mocha">Wellora AI Companion</h2>
-            <span className="text-[10px] text-wellora-mocha/50 block">Maternal Wellness Guide</span>
+            <span className="text-[10px] text-amber-600 block font-semibold">Maternal Wellness Guide • Gold</span>
           </div>
         </div>
 
@@ -301,14 +301,14 @@ export const AIChatView: React.FC = () => {
           >
             <div className="flex gap-2 max-w-[85%] items-start">
               {msg.role === 'model' && (
-                <div className="w-6 h-6 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center text-[9px] font-bold border border-purple-100 flex-shrink-0 mt-0.5">
-                  W
+                <div className="w-6 h-6 rounded-full overflow-hidden border border-amber-300 flex-shrink-0 mt-0.5">
+                  <img src="/images/Ask wellora AI.jpeg" alt="Wellora AI" className="w-full h-full object-cover" />
                 </div>
               )}
               <div
                 className={`px-4 py-2.5 rounded-2xl text-xs leading-relaxed ${msg.role === 'user'
                     ? 'bg-wellora-terracotta text-white rounded-tr-none'
-                    : 'bg-wellora-beige/30 text-wellora-mocha border border-wellora-rose/10 rounded-tl-none'
+                    : 'bg-amber-50/60 text-wellora-mocha border border-amber-200/50 rounded-tl-none'
                   }`}
                 style={{ whiteSpace: 'pre-line' }}
               >

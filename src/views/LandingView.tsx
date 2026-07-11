@@ -43,28 +43,16 @@ export const LandingView: React.FC<LandingViewProps> = ({ onStartJourney, onExpl
     <div className="min-h-screen bg-wellora-beige text-wellora-mocha overflow-x-hidden selection:bg-wellora-rose/30">
       
       {/* Premium Navbar */}
-      <header className="sticky top-0 z-50 bg-wellora-beige/85 backdrop-blur-md border-b border-wellora-mocha/10 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-wellora-terracotta flex items-center justify-center text-white font-serif font-bold text-lg shadow-sm">
-            W
-          </div>
+      <header className="sticky top-0 z-50 bg-wellora-beige/85 backdrop-blur-md border-b border-wellora-mocha/10 px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <img
+            src="/images/wellora-mama-logo.png"
+            alt="Wellora Mama Logo"
+            className="w-9 h-9 rounded-full object-cover shadow-sm"
+          />
           <span className="font-serif text-xl font-bold tracking-wide text-wellora-mocha">
             wellora <span className="text-wellora-terracotta italic font-normal">mama</span>
           </span>
-        </div>
-        <div>
-          <button 
-            onClick={onStartJourney}
-            className="px-5 py-2 rounded-full bg-wellora-terracotta text-white font-medium text-sm hover:bg-wellora-terracotta/95 transition-all shadow-sm hover:shadow hover:translate-y-[-1px]"
-          >
-            Start Your Journey
-          </button>
-          <button 
-            onClick={onLogin}
-            className="ml-2 px-5 py-2 rounded-full bg-wellora-mocha text-white font-medium text-sm hover:bg-wellora-mocha/90 transition-all shadow-sm hover:shadow"
-          >
-            Log In
-          </button>
         </div>
       </header>
 
@@ -121,13 +109,22 @@ export const LandingView: React.FC<LandingViewProps> = ({ onStartJourney, onExpl
               Explore Features
             </button>
           </div>
+
+          {/* Login button below CTAs */}
+          <button
+            onClick={onLogin}
+            className="mt-2 px-6 py-2 bg-transparent text-wellora-mocha/70 border border-wellora-mocha/20 hover:bg-white/60 hover:text-wellora-mocha font-medium rounded-full text-sm transition-all"
+          >
+            Already have an account? <span className="font-bold text-wellora-terracotta">Log In</span>
+          </button>
           
-          {/* Avatar representation (warm illustration vector representation) */}
-          <div className="mt-12 w-28 h-28 rounded-full border-4 border-white shadow-xl bg-wellora-rose/20 overflow-hidden flex items-center justify-center p-3 animate-bounce">
-            <div className="text-center">
-              <span className="text-4xl">🤰</span>
-              <p className="text-[10px] uppercase font-bold text-wellora-mocha/70 tracking-widest mt-1">Wellora Avatar</p>
-            </div>
+          {/* Real Wellora Mama Avatar */}
+          <div className="mt-12 w-28 h-28 rounded-full border-4 border-white shadow-xl overflow-hidden animate-bounce">
+            <img
+              src="/images/WELLORA MAMA AVATAR.jpeg"
+              alt="Wellora Mama Avatar"
+              className="w-full h-full object-cover"
+            />
           </div>
         </div>
       </section>
