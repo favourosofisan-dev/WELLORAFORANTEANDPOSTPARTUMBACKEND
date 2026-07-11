@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import SplashScreen from './components/SplashScreen';
 import { UserProfileProvider, useUserProfile } from './context/UserProfileContext';
 import { BabyProvider } from './context/BabyContext';

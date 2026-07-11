@@ -3,10 +3,10 @@ import { useUserProfile } from '../context/UserProfileContext';
 import { useBaby } from '../context/BabyContext';
 import { EXERCISES } from '../data/mockData';
 import type { Exercise } from '../data/mockData';
-import { Flame, CheckSquare, Square, Calendar, ShieldAlert, Award, ArrowRight, ChevronDown, ChevronUp, Activity, Lightbulb, UserRoundCheck, User2, Wind, Sparkles, Clock, Droplet, CheckCircle } from 'lucide-react';
+import { Flame, CheckSquare, Square, Calendar, ShieldAlert, Award, ArrowRight, ChevronDown, ChevronUp, Activity, Lightbulb, UserRoundCheck, User2, Wind, Sparkles, Clock } from 'lucide-react';
 
 interface DashboardViewProps {
-  onNavigate: (tab: 'home' | 'exercises' | 'baby' | 'profile' | 'antenatal') => void;
+  onNavigate: (tab: 'home' | 'exercises' | 'baby' | 'profile' | 'antenatal' | 'ai') => void;
   onSelectExercise: (exercise: Exercise) => void;
   onOpenBreathingTool: () => void;
 }
@@ -364,7 +364,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               >
                 Full Library <ArrowRight className="w-3 h-3" />
               </button>
-                      {/* Tabs for Standard vs AI Plan */}
+            </div>
+
+            {/* Tabs for Standard vs AI Plan */}
             <div className="flex gap-4 mb-4 border-b border-wellora-rose/10 pb-2">
               <button
                 type="button"
@@ -798,9 +800,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </p>
           </div>
 
-        </div>
+        </div>{/* End Right Column */}
 
-      </div>
+      </div>{/* End Grid */}
 
     </div>
   );

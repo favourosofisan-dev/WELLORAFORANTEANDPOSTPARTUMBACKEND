@@ -10,7 +10,7 @@ interface ProfileViewProps {
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, onOpenDisclaimer, onOpenLegal }) => {
-  const { profile, updateStage, toggleGoal, resetProgress } = useUserProfile();
+  const { profile, updateProfile, updateStage, toggleGoal, resetProgress } = useUserProfile();
 
   const [activeStage, setActiveStage] = useState<UserStage>(profile.stage);
   const [dueDate, setDueDate] = useState<string>(profile.dueOrBirthDate || '');
