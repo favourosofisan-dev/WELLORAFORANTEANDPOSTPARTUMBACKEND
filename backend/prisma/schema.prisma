@@ -1,0 +1,77 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  passwordHash        String
+  salt                String
+  firstName           String
+  lastName            String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  pregnancyProfile    PregnancyProfile?
+  babies              Baby[]
+  exerciseCompletions ExerciseCompletion[]
+  auditLogs           AuditLog[]
+}
+
+model PregnancyProfile {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status          String    // "PREGNANT" | "POSTPARTUM" | "CAREGIVER"
+  dueDate         DateTime?
+  weeksPostpartum Int?
+  goals           String[]  // Array of chosen health goals
+  updatedAt       DateTime  @updatedAt
+}
+
+model Baby {
+  id                  String               @id @default(uuid())
+  userId              String
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                String
+  birthDate           DateTime
+  gender              String?
+  birthWeight         Float?               // Birth weight in kg/lbs
+  createdAt           DateTime             @default(now())
+  immunizationRecords ImmunizationRecord[]
+}
+
+model ImmunizationRecord {
+  id            String    @id @default(uuid())
+  babyId        String
+  baby          Baby      @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  vaccineName   String
+  milestone     String    // e.g., "Birth", "6 Weeks", "15 Months"
+  scheduledDate DateTime
+  completedDate DateTime?
+  status        String    // "UPCOMING" | "COMPLETED" | "OVERDUE"
+  updatedAt     DateTime  @updatedAt
+}
+
+model ExerciseCompletion {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exerciseId      String
+  completedAt     DateTime @default(now())
+  durationSeconds Int
+  pointsAwarded   Int
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  event     String   // e.g., "AUTH_LOGIN_SUCCESS", "AUTH_LOGIN_FAILED", "PASSWORD_CHANGED"
+  ipAddress String
+  timestamp DateTime @default(now())
+}
