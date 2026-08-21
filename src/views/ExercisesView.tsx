@@ -19,6 +19,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showCompletionToast, setShowCompletionToast] = useState<string | null>(null);
   const [forYouOnly, setForYouOnly] = useState<boolean>(true); // Default to For You
+  const [imageError, setImageError] = useState<Record<string, boolean>>({});
 
   const categories = [
     'All',
@@ -235,20 +236,35 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({
                     className="bg-white rounded-3xl border border-wellora-rose/15 p-5 flex flex-col justify-between shadow-sm hover:shadow-md hover:border-wellora-rose/30 transition-all"
                   >
                     <div>
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="text-[10px] uppercase font-bold tracking-wide text-wellora-terracotta bg-wellora-rose/10 px-2 py-0.5 rounded-md">
-                          {ex.category}
-                        </span>
-                        
-                        <div className="flex gap-1.5">
-                          {isSaved && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />}
-                          {isCompleted && <CheckCircle2 className="w-3.5 h-3.5 text-wellora-terracotta" />}
+                      <div className="flex gap-3.5 items-start mb-3">
+                        <div className="w-12 h-12 rounded-2xl bg-wellora-rose/10 flex-shrink-0 overflow-hidden flex items-center justify-center text-lg">
+                          {!imageError[ex.id] ? (
+                            <img 
+                              src={`/images/exercises/${ex.id}.png`} 
+                              alt={ex.title} 
+                              className="w-full h-full object-cover"
+                              onError={() => setImageError(prev => ({ ...prev, [ex.id]: true }))}
+                            />
+                          ) : (
+                            ex.category === 'Pelvic Floor' ? <Star className="w-5 h-5 text-wellora-terracotta" /> : <CheckCircle2 className="w-5 h-5 text-wellora-terracotta" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="text-[10px] uppercase font-bold tracking-wide text-wellora-terracotta bg-wellora-rose/10 px-2 py-0.5 rounded-md">
+                              {ex.category}
+                            </span>
+                            
+                            <div className="flex gap-1.5">
+                              {isSaved && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />}
+                              {isCompleted && <CheckCircle2 className="w-3.5 h-3.5 text-wellora-terracotta" />}
+                            </div>
+                          </div>
+                          <h3 className="font-serif text-base font-bold text-wellora-mocha">
+                            {ex.title}
+                          </h3>
                         </div>
                       </div>
-
-                      <h3 className="font-serif text-base font-bold text-wellora-mocha mb-1">
-                        {ex.title}
-                      </h3>
 
                       <p className="text-xs text-wellora-mocha/60 line-clamp-2 mb-4 leading-normal">
                         {ex.benefits}

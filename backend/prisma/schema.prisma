@@ -1,6 +1,7 @@
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
@@ -14,12 +15,14 @@ model User {
   salt                String
   firstName           String
   lastName            String
+  isPro               Boolean              @default(false)
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   pregnancyProfile    PregnancyProfile?
   babies              Baby[]
   exerciseCompletions ExerciseCompletion[]
   auditLogs           AuditLog[]
+  mediaAssets         MediaAsset[]
 }
 
 model PregnancyProfile {
@@ -74,4 +77,21 @@ model AuditLog {
   event     String   // e.g., "AUTH_LOGIN_SUCCESS", "AUTH_LOGIN_FAILED", "PASSWORD_CHANGED"
   ipAddress String
   timestamp DateTime @default(now())
+}
+
+model MediaAsset {
+  id          String   @id @default(uuid())
+  ownerId     String?
+  owner       User?    @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  kind        String   // "image" | "video"
+  fileName    String
+  mimeType    String
+  sizeBytes   Int
+  description String?
+  content     Bytes
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([kind, createdAt])
+  @@index([ownerId])
 }

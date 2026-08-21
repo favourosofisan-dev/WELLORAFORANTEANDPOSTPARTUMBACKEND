@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../config';
 import { useBaby } from '../context/BabyContext';
 import { useUserProfile } from '../context/UserProfileContext';
 import { CARE_ARTICLES } from '../data/mockData';
@@ -34,7 +35,7 @@ export const BabyView: React.FC = () => {
         userVisibleOnly: true,
         applicationServerKey: VAPID_PUBLIC_KEY,
       });
-      await fetch('/api/push/subscribe-vaccines', {
+      await fetch(`${API_BASE_URL}/api/push/subscribe-vaccines`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subscription: sub, userId: profile.email }),

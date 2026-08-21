@@ -1,20 +1,28 @@
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../config';
 import { useUserProfile } from '../context/UserProfileContext';
-import { X, Mail, Eye, EyeOff, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Mail, Eye, EyeOff, ArrowLeft, CheckCircle } from 'lucide-react';
 
 interface LoginViewProps {
   onLoginSuccess: () => void;
 }
 
 export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
-  const { login } = useUserProfile();
+  const { login, signUp } = useUserProfile();
 
-  // Login state
+  // Mode state
+  const [isSignUp, setIsSignUp] = useState(false);
+
+  // Form states
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // Forgot password state
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -31,15 +39,54 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     } catch { return { count: 0, firstAttemptTime: null }; }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || !password) return;
-    login(name.trim(), email.trim());
-    setShowConfirm(true);
-    setTimeout(() => {
-      setShowConfirm(false);
-      onLoginSuccess();
-    }, 1500);
+    setError('');
+
+    if (!email.trim() || !password) return;
+
+    if (isSignUp) {
+      if (!name.trim()) {
+        setError('Please enter your name.');
+        return;
+      }
+      if (password.length < 6) {
+        setError('Password must be at least 6 characters.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        await signUp(name.trim(), email.trim(), password);
+        setShowConfirm(true);
+        setTimeout(() => {
+          setShowConfirm(false);
+          onLoginSuccess();
+        }, 1500);
+      } catch (err: any) {
+        setError(err.message || 'Failed to create account.');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setLoading(true);
+      try {
+        await login(email.trim(), password);
+        setShowConfirm(true);
+        setTimeout(() => {
+          setShowConfirm(false);
+          onLoginSuccess();
+        }, 1500);
+      } catch (err: any) {
+        setError(err.message || 'Invalid email or password.');
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
   const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
@@ -64,7 +111,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
 
     setResetLoading(true);
     try {
-      await fetch('/api/auth/forgot-password', {
+      await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: resetEmail.trim() }),
@@ -86,15 +133,15 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
         {/* ── Forgot Password Panel ── */}
         {showForgotPassword ? (
           <div className="bg-white rounded-3xl shadow-lg p-8 border border-wellora-rose/15 animate-fade-in">
+            <button
+              onClick={() => { setShowForgotPassword(false); setResetEmail(''); }}
+              className="flex items-center gap-1 text-wellora-mocha/60 hover:text-wellora-mocha text-xs font-semibold mb-6 transition-all"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to Authentication
+            </button>
+
             {!resetSent ? (
               <>
-                <button
-                  onClick={() => { setShowForgotPassword(false); setResetEmail(''); }}
-                  className="flex items-center gap-1 text-wellora-mocha/60 hover:text-wellora-mocha text-xs font-semibold mb-6 transition-all"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" /> Back to Login
-                </button>
-
                 <div className="text-center mb-6">
                   <div className="w-12 h-12 rounded-2xl bg-wellora-rose/15 flex items-center justify-center mx-auto mb-3">
                     <Mail className="w-5 h-5 text-wellora-terracotta" />
@@ -150,13 +197,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
                   onClick={() => { setShowForgotPassword(false); setResetSent(false); setResetEmail(''); }}
                   className="w-full py-3 bg-wellora-terracotta text-white rounded-full font-semibold text-sm hover:bg-wellora-terracotta/95 transition-all"
                 >
-                  Return to Login
+                  Return to Authentication
                 </button>
               </div>
             )}
           </div>
         ) : (
-          /* ── Login Form ── */
+          /* ── Login / Signup Form ── */
           <div className="bg-white rounded-3xl shadow-lg p-8 border border-wellora-rose/15">
             {/* Logo */}
             <div className="flex justify-center mb-6">
@@ -172,23 +219,45 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
               </div>
             </div>
 
+            {/* Toggle tabs */}
+            <div className="flex border-b border-wellora-rose/15 mb-6 text-center">
+              <button
+                type="button"
+                onClick={() => { setIsSignUp(false); setError(''); }}
+                className={`flex-1 pb-3 text-sm font-semibold transition-all ${!isSignUp ? 'border-b-2 border-wellora-terracotta text-wellora-mocha' : 'text-wellora-mocha/40 hover:text-wellora-mocha/60'}`}
+              >
+                Log In
+              </button>
+              <button
+                type="button"
+                onClick={() => { setIsSignUp(true); setError(''); }}
+                className={`flex-1 pb-3 text-sm font-semibold transition-all ${isSignUp ? 'border-b-2 border-wellora-terracotta text-wellora-mocha' : 'text-wellora-mocha/40 hover:text-wellora-mocha/60'}`}
+              >
+                Sign Up
+              </button>
+            </div>
+
             <h2 className="text-xl font-serif text-wellora-mocha text-center mb-1 font-bold">
-              Welcome Back
+              {isSignUp ? 'Create Account' : 'Welcome Back'}
             </h2>
-            <p className="text-[11px] text-wellora-mocha/50 text-center mb-6">Log in to continue your wellness journey.</p>
+            <p className="text-[11px] text-wellora-mocha/50 text-center mb-6">
+              {isSignUp ? 'Join us on your wellness journey today.' : 'Log in to continue your wellness journey.'}
+            </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-wellora-mocha text-xs font-semibold mb-1.5">Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder="Sarah Jenkins"
-                  className="w-full border border-wellora-rose/25 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-wellora-terracotta/30 focus:border-wellora-terracotta transition"
-                  required
-                />
-              </div>
+              {isSignUp && (
+                <div>
+                  <label className="block text-wellora-mocha text-xs font-semibold mb-1.5">Full Name</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder="Sarah Jenkins"
+                    className="w-full border border-wellora-rose/25 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-wellora-terracotta/30 focus:border-wellora-terracotta transition"
+                    required
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-wellora-mocha text-xs font-semibold mb-1.5">Email</label>
@@ -205,14 +274,15 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-wellora-mocha text-xs font-semibold">Password</label>
-                  {/* Forgot password — ONLY here, not on account creation */}
-                  <button
-                    type="button"
-                    onClick={() => setShowForgotPassword(true)}
-                    className="text-wellora-terracotta text-[11px] font-semibold hover:underline transition-all"
-                  >
-                    Forgot password?
-                  </button>
+                  {!isSignUp && (
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotPassword(true)}
+                      className="text-wellora-terracotta text-[11px] font-semibold hover:underline transition-all"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
                 </div>
                 <div className="relative">
                   <input
@@ -233,11 +303,39 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
                 </div>
               </div>
 
+              {isSignUp && (
+                <div>
+                  <label className="block text-wellora-mocha text-xs font-semibold mb-1.5">Confirm Password</label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full border border-wellora-rose/25 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-wellora-terracotta/30 focus:border-wellora-terracotta transition"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-wellora-mocha/40 hover:text-wellora-mocha transition-all"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {error && (
+                <p className="text-xs text-red-600 font-semibold bg-red-50 border border-red-200 px-3 py-2 rounded-xl">{error}</p>
+              )}
+
               <button
                 type="submit"
-                className="w-full bg-wellora-terracotta text-white py-3 rounded-full font-semibold text-sm hover:bg-wellora-terracotta/95 transition-all shadow-sm mt-2"
+                disabled={loading}
+                className="w-full bg-wellora-terracotta text-white py-3 rounded-full font-semibold text-sm hover:bg-wellora-terracotta/95 transition-all shadow-sm mt-2 disabled:opacity-50"
               >
-                Log In
+                {loading ? 'Processing...' : (isSignUp ? 'Sign Up' : 'Log In')}
               </button>
             </form>
           </div>
@@ -247,18 +345,12 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
       {/* Success Overlay */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl p-6 shadow-xl relative w-full max-w-xs">
-            <button
-              onClick={() => setShowConfirm(false)}
-              className="absolute right-3 top-3 text-wellora-mocha/60 hover:text-wellora-mocha"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <div className="text-center">
-              <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" />
-              <h3 className="font-serif text-wellora-terracotta font-bold mb-1">Success!</h3>
-              <p className="text-xs text-wellora-mocha/80">You are now logged in. Redirecting…</p>
-            </div>
+          <div className="bg-white rounded-3xl p-6 shadow-xl relative w-full max-w-xs text-center">
+            <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3 animate-bounce" />
+            <h3 className="font-serif text-wellora-terracotta font-bold mb-1">Success!</h3>
+            <p className="text-xs text-wellora-mocha/80">
+              {isSignUp ? 'Account created.' : 'You are now logged in.'} Redirecting…
+            </p>
           </div>
         </div>
       )}

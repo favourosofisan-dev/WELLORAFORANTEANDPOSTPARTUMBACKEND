@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../config';
 import { useUserProfile } from '../context/UserProfileContext';
 import { useBaby } from '../context/BabyContext';
 import { EXERCISES } from '../data/mockData';
@@ -16,7 +17,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onSelectExercise, 
   onOpenBreathingTool 
 }) => {
-  const { profile, completeExercise } = useUserProfile();
+  const { profile, completeExercise, token } = useUserProfile();
   const { babies } = useBaby();
   const [showAntenatal, setShowAntenatal] = useState(false);
 
@@ -40,6 +41,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return localStorage.getItem('wellora_push_subscribed') === 'true';
   });
   const [pushLoading, setPushLoading] = useState(false);
+  const [imageError, setImageError] = useState<Record<string, boolean>>({});
 
   const subscribeToAntenatalPush = async () => {
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
@@ -61,7 +63,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         userVisibleOnly: true,
         applicationServerKey: VAPID_PUBLIC_KEY,
       });
-      await fetch('/api/push/subscribe', {
+      await fetch(`${API_BASE_URL}/api/push/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subscription: sub, userId: profile.email }),
@@ -81,10 +83,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const generateAiPlan = async () => {
     setGeneratingPlan(true);
     try {
-      const response = await fetch('/api/ai/daily-plan', {
+      const response = await fetch(`${API_BASE_URL}/api/ai/daily-plan`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
           userProfile: profile,
@@ -479,8 +482,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         }`}
                       >
                         <div className="flex items-center gap-3 cursor-pointer flex-1" onClick={() => onSelectExercise(ex)}>
-                          <div className="w-10 h-10 rounded-xl bg-wellora-rose/15 flex items-center justify-center text-lg">
-                            {ex.category === 'Pelvic Floor' ? <UserRoundCheck className="w-5 h-5" /> : ex.category === 'Breathing' ? <Wind className="w-5 h-5" /> : <Activity className="w-5 h-5" />}
+                          <div className="w-10 h-10 rounded-xl bg-wellora-rose/15 overflow-hidden flex items-center justify-center text-lg flex-shrink-0">
+                            {!imageError[ex.id] ? (
+                              <img 
+                                src={`/images/exercises/${ex.id}.png`} 
+                                alt={ex.title} 
+                                className="w-full h-full object-cover"
+                                onError={() => setImageError(prev => ({ ...prev, [ex.id]: true }))}
+                              />
+                            ) : (
+                              ex.category === 'Pelvic Floor' ? <UserRoundCheck className="w-5 h-5 text-wellora-terracotta" /> : ex.category === 'Breathing' ? <Wind className="w-5 h-5 text-wellora-terracotta" /> : <Activity className="w-5 h-5 text-wellora-terracotta" />
+                            )}
                           </div>
                           <div>
                             <h4 className="text-xs font-bold text-wellora-mocha">{ex.title}</h4>

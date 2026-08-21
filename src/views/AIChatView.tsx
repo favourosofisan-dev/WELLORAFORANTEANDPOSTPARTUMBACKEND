@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { API_BASE_URL } from '../config';
 import { useUserProfile } from '../context/UserProfileContext';
 import { MessageSquare, Send, Trash2, Heart, AlertCircle } from 'lucide-react';
 
 export const AIChatView: React.FC = () => {
-  const { profile, upgradeToPro, acknowledgeAiDisclaimer } = useUserProfile();
+  const { profile, upgradeToPro, acknowledgeAiDisclaimer, token } = useUserProfile();
 
   // Chat state
   const [messages, setMessages] = useState<{ role: 'user' | 'model'; text: string }[]>(() => {
@@ -83,10 +84,11 @@ export const AIChatView: React.FC = () => {
 
     try {
       // Setup payload matching backend requirements
-      const response = await fetch('/api/ai/chat', {
+      const response = await fetch(`${API_BASE_URL}/api/ai/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
           message: textToSend,

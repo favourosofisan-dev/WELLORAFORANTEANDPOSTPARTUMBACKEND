@@ -8,9 +8,10 @@ interface OnboardingViewProps {
 }
 
 export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete, onBackToLanding }) => {
-  const { profile, updateStage, toggleGoal, acceptDisclaimer, login } = useUserProfile();
+  const { profile, updateStage, toggleGoal, acceptDisclaimer, signUp } = useUserProfile();
   
   const [step, setStep] = useState<number>(0); // 0: Welcome, 1: Who Are You?, 2: Goals, 3: Disclaimer, 4: Account Creation, 5: Generation
+  const [loading, setLoading] = useState<boolean>(false);
   
   // Form states
   const [stage, setStage] = useState<'pregnant' | 'postpartum' | 'caregiver'>('pregnant');
@@ -23,20 +24,17 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete, onBa
   const [showPassword, setShowPassword] = useState(false);
   const [disclaimerChecked, setDisclaimerChecked] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-
+ 
   // Calculation helpers
   const handleDueDateChange = (dateStr: string) => {
     setDueOrBirthDate(dateStr);
     if (!dateStr) return;
-
+ 
     const due = new Date(dateStr);
     const today = new Date();
     const diffTime = due.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    // Max pregnancy duration is ~280 days (40 weeks)
-    // 40 weeks = 280 days. Today to due date.
-    // If due date is 280 days away, baby is conceived today (~0 weeks).
     const weeksConceived = Math.max(0, 40 - Math.floor(diffDays / 7));
     
     if (weeksConceived <= 13) {
@@ -47,8 +45,8 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete, onBa
       setTrimester('Third');
     }
   };
-
-  const handleNextStep = () => {
+ 
+  const handleNextStep = async () => {
     setErrors({});
     
     if (step === 1) {
@@ -62,16 +60,16 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete, onBa
         updateStage('caregiver', { trimester: null, dueOrBirthDate: null, weeksPostpartum: null });
       }
     }
-
+ 
     if (step === 3 && !disclaimerChecked) {
       setErrors({ disclaimer: 'You must read and accept the medical disclaimer to proceed.' });
       return;
     }
-
+ 
     if (step === 3 && disclaimerChecked) {
       acceptDisclaimer();
     }
-
+ 
     if (step === 4) {
       const errs: { [key: string]: string } = {};
       if (!name.trim()) errs.name = 'Please enter your name.';
@@ -82,11 +80,24 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete, onBa
         setErrors(errs);
         return;
       }
-
-      // Simulate account registration
-      login(name, email);
+ 
+      setLoading(true);
+      try {
+        await signUp(name.trim(), email.trim(), password, {
+          stage,
+          trimester: stage === 'pregnant' ? trimester : null,
+          weeksPostpartum: stage === 'postpartum' ? weeksPostpartum : null,
+          dueOrBirthDate: stage !== 'caregiver' ? dueOrBirthDate : null,
+          goals: profile.goals,
+        });
+      } catch (err: any) {
+        setErrors({ submit: err.message || 'Failed to create account. Please make sure the database is connected.' });
+        setLoading(false);
+        return;
+      }
+      setLoading(false);
     }
-
+ 
     setStep((prev) => prev + 1);
   };
 
@@ -489,19 +500,25 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete, onBa
               </div>
             </form>
 
+            {errors.submit && (
+              <p className="text-xs text-red-500 font-bold mb-4 bg-red-50 border border-red-200 px-3 py-2 rounded-xl">{errors.submit}</p>
+            )}
+
             {/* Navigation */}
             <div className="flex gap-3">
               <button 
                 onClick={handlePrevStep}
-                className="flex-1 py-3 border border-wellora-mocha/20 text-wellora-mocha hover:bg-wellora-rose/10 font-medium rounded-full text-sm flex items-center justify-center gap-1.5 transition-all"
+                disabled={loading}
+                className="flex-1 py-3 border border-wellora-mocha/20 text-wellora-mocha hover:bg-wellora-rose/10 font-medium rounded-full text-sm flex items-center justify-center gap-1.5 transition-all disabled:opacity-50"
               >
                 <ArrowLeft className="w-4 h-4" /> Back
               </button>
               <button 
                 onClick={handleNextStep}
-                className="flex-1 py-3 bg-wellora-terracotta text-white hover:bg-wellora-terracotta/95 font-medium rounded-full text-sm flex items-center justify-center gap-1.5 transition-all"
+                disabled={loading}
+                className="flex-1 py-3 bg-wellora-terracotta text-white hover:bg-wellora-terracotta/95 font-medium rounded-full text-sm flex items-center justify-center gap-1.5 transition-all disabled:opacity-50"
               >
-                Create Account <ArrowRight className="w-4 h-4" />
+                {loading ? 'Creating...' : 'Create Account'} <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
