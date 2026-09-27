@@ -1,0 +1,5 @@
+ALTER TABLE "User" ADD COLUMN "neonUserId" TEXT;
+ALTER TABLE "User" ALTER COLUMN "passwordHash" DROP NOT NULL;
+ALTER TABLE "User" ALTER COLUMN "salt" DROP NOT NULL;
+
+CREATE UNIQUE INDEX "User_neonUserId_key" ON "User"("neonUserId");

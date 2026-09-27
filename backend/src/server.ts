@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import * as dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { GeminiService } from './services/ai/gemini.service';
 import { rateLimiter, RATE_LIMIT_PRESETS } from './middleware/rate-limiter';
 import { prisma } from './db';
@@ -15,6 +16,9 @@ const PORT = process.env.PORT || 5000; // default to 5000 as configured in .env.
 const JWT_SECRET = process.env.JWT_SECRET || 'development-jwt-secret-key-wellora-mama-2026';
 const JSON_BODY_LIMIT = process.env.JSON_BODY_LIMIT || '25mb';
 const MAX_MEDIA_UPLOAD_BYTES = Number(process.env.MAX_MEDIA_UPLOAD_BYTES || 15 * 1024 * 1024);
+const NEON_AUTH_BASE_URL = process.env.NEON_AUTH_BASE_URL;
+const NEON_AUTH_JWKS_URL = process.env.NEON_AUTH_JWKS_URL;
+const neonJwks = NEON_AUTH_JWKS_URL ? createRemoteJWKSet(new URL(NEON_AUTH_JWKS_URL)) : null;
 
 // Enable CORS
 const allowedOrigins = [
@@ -55,12 +59,49 @@ export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     email: string;
+    neonUserId?: string;
   };
 }
 
-export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
+type VerifiedIdentity = {
+  id: string;
+  email?: string;
+  isNeon: boolean;
+};
+
+const verifyAccessToken = async (token: string): Promise<VerifiedIdentity> => {
+  const decoded = jwt.decode(token, { complete: true });
+
+  // Existing Wellora tokens remain valid during the Neon Auth migration.
+  if (decoded && typeof decoded === 'object' && decoded.header.alg === 'HS256') {
+    const payload = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+    if (!payload.id || typeof payload.id !== 'string') throw new Error('Invalid legacy token.');
+    return { id: payload.id, email: typeof payload.email === 'string' ? payload.email : undefined, isNeon: false };
+  }
+
+  if (!NEON_AUTH_BASE_URL || !neonJwks) {
+    throw new Error('Neon Auth is not configured.');
+  }
+
+  const { payload } = await jwtVerify(token, neonJwks, {
+    issuer: new URL(NEON_AUTH_BASE_URL).origin,
+  });
+  if (!payload.sub) throw new Error('Neon token is missing a subject.');
+
+  return {
+    id: payload.sub,
+    email: typeof payload.email === 'string' ? payload.email : undefined,
+    isNeon: true,
+  };
+};
+
+const readBearerToken = (req: Request) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+  return authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+};
+
+const authenticateIdentity = async (req: Request, res: Response, next: NextFunction) => {
+  const token = readBearerToken(req);
 
   if (!token) {
     return res.status(401).json({
@@ -70,16 +111,49 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     });
   }
 
-  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
-    if (err) {
-      return res.status(403).json({
-        statusCode: 403,
-        error: 'Forbidden',
-        message: 'Invalid or expired access token.'
-      });
-    }
-    (req as any).user = user;
+  try {
+    const identity = await verifyAccessToken(token);
+    (req as AuthenticatedRequest).user = {
+      id: identity.id,
+      email: identity.email || '',
+      neonUserId: identity.isNeon ? identity.id : undefined,
+    };
     next();
+  } catch {
+    return res.status(403).json({
+      statusCode: 403,
+      error: 'Forbidden',
+      message: 'Invalid or expired access token.'
+    });
+  }
+};
+
+export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
+  await authenticateIdentity(req, res, async () => {
+    const identity = (req as AuthenticatedRequest).user;
+    if (!identity) return;
+
+    if (!identity.neonUserId) {
+      return next();
+    }
+
+    try {
+      const user = await prisma.user.findUnique({
+        where: { neonUserId: identity.neonUserId },
+        select: { id: true, email: true }
+      });
+      if (!user) {
+        return res.status(401).json({ error: 'Wellora profile setup is incomplete.' });
+      }
+      (req as AuthenticatedRequest).user = {
+        id: user.id,
+        email: user.email,
+        neonUserId: identity.neonUserId,
+      };
+      next();
+    } catch (error) {
+      next(error);
+    }
   });
 };
 
@@ -264,6 +338,78 @@ app.delete('/api/media/:id', authenticateToken, async (req: Request, res: Respon
 });
 
 /**
+ * Create or update the Wellora application profile for a verified Neon user.
+ * POST /api/auth/provision
+ */
+app.post('/api/auth/provision', authenticateIdentity, async (req: Request, res: Response) => {
+  try {
+    const identity = (req as AuthenticatedRequest).user;
+    const neonUserId = identity?.neonUserId;
+    const verifiedEmail = identity?.email;
+    const { name, stage, weeksPostpartum, dueOrBirthDate, goals } = req.body;
+
+    if (!neonUserId || !verifiedEmail || !name) {
+      return res.status(400).json({ error: 'A verified Neon session with an email address and name is required.' });
+    }
+
+    const nameParts = name.trim().split(' ');
+    const firstName = nameParts[0] || 'Mama';
+    const lastName = nameParts.slice(1).join(' ') || '';
+    const profileData = {
+      status: (stage || 'pregnant').toUpperCase(),
+      dueDate: dueOrBirthDate ? new Date(dueOrBirthDate) : null,
+      weeksPostpartum: weeksPostpartum ? Number(weeksPostpartum) : null,
+      goals: Array.isArray(goals) ? goals : [],
+    };
+
+    const existingByNeonId = await prisma.user.findUnique({ where: { neonUserId } });
+    const existingByEmail = existingByNeonId
+      ? null
+      : await prisma.user.findUnique({ where: { email: verifiedEmail } });
+
+    // Do not attach a new Neon identity to an existing legacy account by email.
+    // That migration needs an explicit, verified account-recovery flow.
+    if (existingByEmail && !existingByEmail.neonUserId) {
+      return res.status(409).json({
+        error: 'This email already belongs to an existing Wellora account. Please contact support to migrate it to Neon Auth.'
+      });
+    }
+
+    const user = await prisma.user.upsert({
+      where: { neonUserId },
+      update: {
+        email: verifiedEmail,
+        firstName,
+        lastName,
+        pregnancyProfile: { upsert: { create: profileData, update: profileData } },
+      },
+      create: {
+        neonUserId,
+        email: verifiedEmail,
+        firstName,
+        lastName,
+        pregnancyProfile: { create: profileData },
+      },
+      include: { pregnancyProfile: true },
+    });
+
+    return res.status(201).json({
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isPro: user.isPro,
+        pregnancyProfile: user.pregnancyProfile,
+      }
+    });
+  } catch (err) {
+    console.error('Neon profile provisioning error:', err);
+    return res.status(500).json({ error: 'Failed to create your Wellora profile.' });
+  }
+});
+
+/**
  * Sign Up Endpoint
  * POST /api/auth/signup
  */
@@ -364,7 +510,8 @@ app.post('/api/auth/login', RATE_LIMIT_PRESETS.auth, async (req: Request, res: R
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
-    const isPasswordValid = await PasswordService.verifyPassword(password, user.passwordHash, user.salt);
+    const isPasswordValid = !!user.passwordHash && !!user.salt &&
+      await PasswordService.verifyPassword(password, user.passwordHash, user.salt);
     if (!isPasswordValid) {
       // Log failed attempt
       await prisma.auditLog.create({

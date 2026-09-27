@@ -10,9 +10,10 @@ generator client {
 
 model User {
   id                  String               @id @default(uuid())
+  neonUserId          String?              @unique
   email               String               @unique
-  passwordHash        String
-  salt                String
+  passwordHash        String?
+  salt                String?
   firstName           String
   lastName            String
   isPro               Boolean              @default(false)
